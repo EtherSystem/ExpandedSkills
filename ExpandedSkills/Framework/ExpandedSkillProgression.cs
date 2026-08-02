@@ -80,46 +80,11 @@ namespace ExpandedSkills.Framework
             return TierPointsBySkill.TryGetValue(skill.m_SkillType, out TierPointCache cached) ? cached.Vanilla : Array.Empty<int>();
         }
 
-        internal static int ConvertVanillaPointsToExpanded(Skill skill, int vanillaPoints)
+        internal static int GetVanillaCompatibilityPoints(Skill skill, int expandedPoints)
         {
             int[] vanilla = GetVanillaTierPoints(skill);
-            int[] expanded = GetTierPoints(skill);
-            if (vanilla.Length < 5 || expanded.Length < MaxLevel) return Math.Max(0, vanillaPoints);
-
-            int[] expandedAnchors = { expanded[0], expanded[2], expanded[4], expanded[6], expanded[8] };
-            return MapProgress(Math.Max(0, vanillaPoints), vanilla, expandedAnchors);
-        }
-
-        internal static int ConvertExpandedPointsToVanilla(Skill skill, int expandedPoints)
-        {
-            int[] vanilla = GetVanillaTierPoints(skill);
-            int[] expanded = GetTierPoints(skill);
-            if (vanilla.Length < 5 || expanded.Length < MaxLevel) return Math.Max(0, expandedPoints);
-
-            int[] expandedAnchors = { expanded[0], expanded[2], expanded[4], expanded[6], expanded[8] };
-            return MapProgress(Math.Max(0, expandedPoints), expandedAnchors, vanilla);
-        }
-
-        private static int MapProgress(int points, int[] sourceAnchors, int[] targetAnchors)
-        {
-            if (sourceAnchors == null || targetAnchors == null || sourceAnchors.Length < 5 || targetAnchors.Length < 5) return Math.Max(0, points);
-            if (points <= sourceAnchors[0]) return targetAnchors[0];
-
-            for (int i = 0; i < 4; i++)
-            {
-                int sourceStart = sourceAnchors[i];
-                int sourceEnd = sourceAnchors[i + 1];
-                if (points > sourceEnd) continue;
-
-                int targetStart = targetAnchors[i];
-                int targetEnd = targetAnchors[i + 1];
-                if (sourceEnd <= sourceStart) return targetEnd;
-
-                double progress = (points - sourceStart) / (double)(sourceEnd - sourceStart);
-                return (int)Math.Round(targetStart + (targetEnd - targetStart) * progress, MidpointRounding.AwayFromZero);
-            }
-
-            return targetAnchors[4];
+            if (vanilla.Length < 5) return Math.Max(0, expandedPoints);
+            return Math.Max(0, Math.Min(expandedPoints, vanilla[4]));
         }
 
         private static bool SourceMatches(Il2CppStructArray<int> source, int[] vanilla)

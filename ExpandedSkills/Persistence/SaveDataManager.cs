@@ -105,7 +105,7 @@ namespace ExpandedSkills.Persistence
             EnsureState();
             ExpandedSkillState state = GetOrCreateSkillState(skill.m_SkillType);
             int expandedPoints = ClampExpandedPoints(skill, skill.m_CurrentPoints);
-            int vanillaPoints = ExpandedSkillProgression.ConvertExpandedPointsToVanilla(skill, expandedPoints);
+            int vanillaPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, expandedPoints);
 
             if (state.ExpandedPoints == expandedPoints && state.VanillaCompatibilityPoints == vanillaPoints) return;
 
@@ -208,9 +208,9 @@ namespace ExpandedSkills.Persistence
             _stateLoaded = true;
 
             string note = freshState
-                ? "empty data / migrated current vanilla or legacy ExpandedSkills progression"
+                ? "empty data / preserved current skill progression"
                 : corruptedState
-                    ? "corrupted data / rebuilt safely from current vanilla progression"
+                    ? "corrupted data / rebuilt safely from current skill progression"
                     : null;
 
             bool deferFreshMigration = (freshState || corruptedState) && string.IsNullOrEmpty(serializedSkillsManagerData);
@@ -219,7 +219,7 @@ namespace ExpandedSkills.Persistence
                 _pendingFreshMigration = true;
                 s_PendingLoadNote = note ?? "waiting for vanilla skill progression";
                 if (freshState || corruptedState || normalized) Core.Instance?.MarkDirty();
-                Core.Log("[ModData] Skill migration deferred until the loaded save exposes its real skill points.");
+                Core.Log("[ModData] Skill import deferred until the loaded save exposes its real skill points.");
                 return;
             }
 
@@ -242,7 +242,7 @@ namespace ExpandedSkills.Persistence
             if (changed) Core.Instance?.MarkDirty();
 
             string note = string.IsNullOrEmpty(s_PendingLoadNote)
-                ? "migrated current vanilla or legacy ExpandedSkills progression"
+                ? "preserved current skill progression"
                 : s_PendingLoadNote;
             s_PendingLoadNote = string.Empty;
             LogStateSnapshot("Loaded", note);
@@ -255,8 +255,6 @@ namespace ExpandedSkills.Persistence
             EnsureState();
 
             IReadOnlyDictionary<SkillType, int> serializedPoints = ExpandedSkillPointPersistence.ReadSerializedPoints(serializedSkillsManagerData);
-            bool stateHadStoredSkillData = Core.State.Skills.Count > 0;
-            bool migrateFreshStateAsLegacyExpanded = !stateHadStoredSkillData && HasAnyLegacyExpandedProgress(serializedPoints);
             bool changed = false;
 
             foreach (ExpandedSkillDefinition definition in ExpandedSkillRegistry.All)
@@ -276,17 +274,12 @@ namespace ExpandedSkills.Persistence
 
                 if (!hadState)
                 {
-                    bool preserveLegacyExpandedPoints = migrateFreshStateAsLegacyExpanded || loadedRawPoints > vanillaMaximum;
-                    targetExpandedPoints = preserveLegacyExpandedPoints
-                        ? ClampExpandedPoints(skill, loadedRawPoints)
-                        : ExpandedSkillProgression.ConvertVanillaPointsToExpanded(skill, loadedVanillaPoints);
-
+                    targetExpandedPoints = ClampExpandedPoints(skill, loadedRawPoints);
                     state.ExpandedPoints = targetExpandedPoints;
-                    state.VanillaCompatibilityPoints = ExpandedSkillProgression.ConvertExpandedPointsToVanilla(skill, targetExpandedPoints);
+                    state.VanillaCompatibilityPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, targetExpandedPoints);
                     changed = true;
 
-                    string migrationSource = preserveLegacyExpandedPoints ? "legacy ExpandedSkills" : "vanilla";
-                    Core.Log($"[ModData][{ExpandedSkillRegistry.GetLogName(skill.m_SkillType)}] Migrated {migrationSource} progression: LoadedPoints={loadedRawPoints} -> ExpandedPoints={targetExpandedPoints}.");
+                    Core.Log($"[ModData][{ExpandedSkillRegistry.GetLogName(skill.m_SkillType)}] Preserved loaded progression: LoadedPoints={loadedRawPoints} -> ExpandedPoints={targetExpandedPoints}.");
                 }
                 else
                 {
@@ -296,22 +289,17 @@ namespace ExpandedSkills.Persistence
 
                     if (reconcileVanillaProgress)
                     {
-                        int importedExpandedPoints = loadedRawPoints > vanillaMaximum
-                            ? ClampExpandedPoints(skill, loadedRawPoints)
-                            : ExpandedSkillProgression.ConvertVanillaPointsToExpanded(skill, loadedVanillaPoints);
-
-                        bool hasNewVanillaProgress = loadedVanillaPoints > savedVanillaPoints;
-                        bool hasLegacyExpandedProgress = loadedRawPoints > vanillaMaximum && importedExpandedPoints > targetExpandedPoints;
-                        if ((hasNewVanillaProgress || hasLegacyExpandedProgress) && importedExpandedPoints > targetExpandedPoints)
+                        int importedExpandedPoints = ClampExpandedPoints(skill, loadedRawPoints);
+                        bool hasNewSerializedProgress = loadedVanillaPoints > savedVanillaPoints || loadedRawPoints > vanillaMaximum;
+                        if (hasNewSerializedProgress && importedExpandedPoints > targetExpandedPoints)
                         {
-                            string source = hasLegacyExpandedProgress ? "legacy ExpandedSkills" : "vanilla";
-                            Core.Log($"[ModData][{ExpandedSkillRegistry.GetLogName(skill.m_SkillType)}] Imported {source} progression: VanillaPoints={savedVanillaPoints}->{loadedVanillaPoints} | ExpandedPoints={targetExpandedPoints}->{importedExpandedPoints}.");
+                            Core.Log($"[ModData][{ExpandedSkillRegistry.GetLogName(skill.m_SkillType)}] Imported newer serialized progression: CompatibilityPoints={savedVanillaPoints}->{loadedVanillaPoints} | ExpandedPoints={targetExpandedPoints}->{importedExpandedPoints}.");
                             targetExpandedPoints = importedExpandedPoints;
                             changed = true;
                         }
                     }
 
-                    int normalizedVanillaPoints = ExpandedSkillProgression.ConvertExpandedPointsToVanilla(skill, targetExpandedPoints);
+                    int normalizedVanillaPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, targetExpandedPoints);
                     if (state.ExpandedPoints != targetExpandedPoints || state.VanillaCompatibilityPoints != normalizedVanillaPoints) changed = true;
                     state.ExpandedPoints = targetExpandedPoints;
                     state.VanillaCompatibilityPoints = normalizedVanillaPoints;
@@ -321,24 +309,6 @@ namespace ExpandedSkills.Persistence
             }
 
             return changed;
-        }
-
-
-        private static bool HasAnyLegacyExpandedProgress(IReadOnlyDictionary<SkillType, int> serializedPoints)
-        {
-            foreach (ExpandedSkillDefinition definition in ExpandedSkillRegistry.All)
-            {
-                Skill skill = definition.GetSkillForPersistence();
-                if (skill == null) continue;
-
-                int loadedPoints = serializedPoints.TryGetValue(skill.m_SkillType, out int serializedValue)
-                    ? serializedValue
-                    : skill.m_CurrentPoints;
-                int[] vanillaTierPoints = ExpandedSkillProgression.GetVanillaTierPoints(skill);
-                if (vanillaTierPoints.Length >= 5 && loadedPoints > vanillaTierPoints[4]) return true;
-            }
-
-            return false;
         }
 
         private static bool CaptureRuntimeState()
@@ -353,7 +323,7 @@ namespace ExpandedSkills.Persistence
 
                 ExpandedSkillState state = GetOrCreateSkillState(skill.m_SkillType);
                 int expandedPoints = ClampExpandedPoints(skill, skill.m_CurrentPoints);
-                int vanillaPoints = ExpandedSkillProgression.ConvertExpandedPointsToVanilla(skill, expandedPoints);
+                int vanillaPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, expandedPoints);
                 if (state.ExpandedPoints != expandedPoints || state.VanillaCompatibilityPoints != vanillaPoints) changed = true;
                 state.ExpandedPoints = expandedPoints;
                 state.VanillaCompatibilityPoints = vanillaPoints;
