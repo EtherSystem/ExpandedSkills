@@ -32,17 +32,29 @@ namespace ExpandedSkills.Persistence
         private static bool _stateLoaded;
         private static bool _pendingVanillaReconciliation;
         private static bool _pendingFreshMigration;
+        private static int _skillsDeserializeDepth;
         private static SkillsManager s_LastSkillsManager;
         private static string s_LastSerializedSkillsManagerData = string.Empty;
         private static string s_PendingLoadNote = string.Empty;
 
         internal static bool IsStateLoaded => _stateLoaded;
 
+        internal static void BeginSkillsDeserialize()
+        {
+            _skillsDeserializeDepth++;
+        }
+
+        internal static void EndSkillsDeserialize()
+        {
+            if (_skillsDeserializeDepth > 0) _skillsDeserializeDepth--;
+        }
+
         internal static void BeginSlotLoad()
         {
             _stateLoaded = false;
             _pendingVanillaReconciliation = true;
             _pendingFreshMigration = false;
+            _skillsDeserializeDepth = 0;
             s_LastSkillsManager = null;
             s_LastSerializedSkillsManagerData = string.Empty;
             s_PendingLoadNote = string.Empty;
@@ -92,9 +104,9 @@ namespace ExpandedSkills.Persistence
             if (changed) Core.Instance?.MarkDirty();
         }
 
-        internal static void OnSkillPointsChanged(Skill skill)
+        internal static void OnSkillPointsChanged(Skill skill, bool allowDecrease = false)
         {
-            if (!_stateLoaded || skill == null) return;
+            if (!_stateLoaded || _skillsDeserializeDepth > 0 || skill == null) return;
             if (!ExpandedSkillRegistry.TryGetForPersistence(skill.m_SkillType, out _)) return;
             if (_pendingFreshMigration)
             {
@@ -103,10 +115,22 @@ namespace ExpandedSkills.Persistence
             }
 
             EnsureState();
-            ExpandedSkillState state = GetOrCreateSkillState(skill.m_SkillType);
+            bool hadState = TryGetSkillState(skill.m_SkillType, out ExpandedSkillState state);
+            state ??= GetOrCreateSkillState(skill.m_SkillType);
             int expandedPoints = ClampExpandedPoints(skill, skill.m_CurrentPoints);
-            int vanillaPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, expandedPoints);
 
+            if (!allowDecrease && hadState && expandedPoints < state.ExpandedPoints)
+            {
+                int restoredPoints = ClampExpandedPoints(skill, state.ExpandedPoints);
+                if (skill.m_CurrentPoints != restoredPoints)
+                {
+                    Core.Log($"[ModData][{ExpandedSkillRegistry.GetLogName(skill.m_SkillType)}] Ignored transient runtime decrease: RuntimePoints={expandedPoints} -> RestoredPoints={restoredPoints}.");
+                    skill.m_CurrentPoints = restoredPoints;
+                }
+                return;
+            }
+
+            int vanillaPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, expandedPoints);
             if (state.ExpandedPoints == expandedPoints && state.VanillaCompatibilityPoints == vanillaPoints) return;
 
             state.ExpandedPoints = expandedPoints;
@@ -146,6 +170,7 @@ namespace ExpandedSkills.Persistence
             _stateLoaded = true;
             _pendingVanillaReconciliation = false;
             _pendingFreshMigration = false;
+            _skillsDeserializeDepth = 0;
             s_LastSkillsManager = null;
             s_LastSerializedSkillsManagerData = string.Empty;
             s_PendingLoadNote = string.Empty;
@@ -159,6 +184,7 @@ namespace ExpandedSkills.Persistence
             _stateLoaded = false;
             _pendingVanillaReconciliation = false;
             _pendingFreshMigration = false;
+            _skillsDeserializeDepth = 0;
             s_LastSkillsManager = null;
             s_LastSerializedSkillsManagerData = string.Empty;
             s_PendingLoadNote = string.Empty;
@@ -305,7 +331,11 @@ namespace ExpandedSkills.Persistence
                     state.VanillaCompatibilityPoints = normalizedVanillaPoints;
                 }
 
-                if (skill.m_CurrentPoints != targetExpandedPoints) skill.m_CurrentPoints = targetExpandedPoints;
+                if (skill.m_CurrentPoints != targetExpandedPoints)
+                {
+                    Core.Log($"[ModData][{ExpandedSkillRegistry.GetLogName(skill.m_SkillType)}] Restored runtime progression: RuntimePoints={skill.m_CurrentPoints} -> ExpandedPoints={targetExpandedPoints}.");
+                    skill.m_CurrentPoints = targetExpandedPoints;
+                }
             }
 
             return changed;
@@ -321,11 +351,24 @@ namespace ExpandedSkills.Persistence
                 Skill skill = definition.GetSkillForPersistence();
                 if (skill == null) continue;
 
-                ExpandedSkillState state = GetOrCreateSkillState(skill.m_SkillType);
-                int expandedPoints = ClampExpandedPoints(skill, skill.m_CurrentPoints);
-                int vanillaPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, expandedPoints);
-                if (state.ExpandedPoints != expandedPoints || state.VanillaCompatibilityPoints != vanillaPoints) changed = true;
-                state.ExpandedPoints = expandedPoints;
+                bool hadState = TryGetSkillState(skill.m_SkillType, out ExpandedSkillState state);
+                state ??= GetOrCreateSkillState(skill.m_SkillType);
+                int runtimePoints = ClampExpandedPoints(skill, skill.m_CurrentPoints);
+
+                if (hadState && runtimePoints < state.ExpandedPoints)
+                {
+                    int restoredPoints = ClampExpandedPoints(skill, state.ExpandedPoints);
+                    if (skill.m_CurrentPoints != restoredPoints)
+                    {
+                        Core.Log($"[ModData][{ExpandedSkillRegistry.GetLogName(skill.m_SkillType)}] Prevented save-time progression rollback: RuntimePoints={runtimePoints} -> RestoredPoints={restoredPoints}.");
+                        skill.m_CurrentPoints = restoredPoints;
+                    }
+                    continue;
+                }
+
+                int vanillaPoints = ExpandedSkillProgression.GetVanillaCompatibilityPoints(skill, runtimePoints);
+                if (state.ExpandedPoints != runtimePoints || state.VanillaCompatibilityPoints != vanillaPoints) changed = true;
+                state.ExpandedPoints = runtimePoints;
                 state.VanillaCompatibilityPoints = vanillaPoints;
             }
 

@@ -215,7 +215,7 @@ namespace ExpandedSkills.Framework
             int oldLevel = GetRealLevel(skill);
             int[] tierPoints = GetTierPoints(skill);
             skill.m_CurrentPoints = Math.Max(0, Math.Min(points, tierPoints[MaxTierIndex]));
-            SaveDataManager.OnSkillPointsChanged(skill);
+            SaveDataManager.OnSkillPointsChanged(skill, allowDecrease: true);
             SkillLevelTracker.ObserveLevelChange(skill, oldLevel);
         }
 

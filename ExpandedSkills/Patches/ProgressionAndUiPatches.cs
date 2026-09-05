@@ -19,6 +19,7 @@ namespace ExpandedSkills.Patches
     {
         private static void Prefix()
         {
+            SaveDataManager.BeginSkillsDeserialize();
             if (!Core.IsGameplayActive) return;
             ExpandedSkillProgression.ApplyAllTierPointData();
         }
@@ -26,10 +27,19 @@ namespace ExpandedSkills.Patches
         private static void Postfix(SkillsManager __instance, string __0)
         {
             SaveDataManager.OnSkillsDeserialized(__instance, __0);
-            if (!Core.IsGameplayActive) return;
+            if (Core.IsGameplayActive)
+            {
+                ExpandedSkillProgression.ApplyAllTierPointData();
+                SkillLevelTracker.NotifySkillsDeserialized();
+            }
 
-            ExpandedSkillProgression.ApplyAllTierPointData();
-            SkillLevelTracker.NotifySkillsDeserialized();
+            SaveDataManager.EndSkillsDeserialize();
+        }
+
+        private static Exception Finalizer(Exception __exception)
+        {
+            if (__exception != null) SaveDataManager.EndSkillsDeserialize();
+            return __exception;
         }
     }
 
@@ -131,6 +141,53 @@ namespace ExpandedSkills.Patches
             int expandedNoBenefitLevel = vanillaNoBenefitLevel * 2 - 1;
             __result = ExpandedSkillProgression.GetRealLevel(skill) >= expandedNoBenefitLevel;
             return false;
+        }
+    }
+
+    internal static class CookingRecipeSkillCompatibility
+    {
+        internal static void RemoveSatisfiedSkillRequirement(Il2CppTLD.Cooking.CookableItem item, ref Il2CppTLD.Cooking.CookableItem.Cookablility result)
+        {
+            if (!Core.IsGameplayActive || item.m_Recipe == null) return;
+
+            Skill_Cooking skill = GameManager.GetSkillCooking();
+            if (skill == null || !ExpandedSkillRegistry.TryGet(skill, out _)) return;
+            if (!ExpandedSkillProgression.HasRewardLevel(skill, item.m_Recipe.RequiredSkillLevel)) return;
+
+            result = (Il2CppTLD.Cooking.CookableItem.Cookablility)((int)result & ~(int)Il2CppTLD.Cooking.CookableItem.Cookablility.SkillTooLow);
+        }
+    }
+
+    [HarmonyPatch(typeof(Il2CppTLD.Cooking.CookableItem), nameof(Il2CppTLD.Cooking.CookableItem.GetCookability))]
+    internal static class CookableItemGetCookabilityPatch
+    {
+        [HarmonyPriority(Priority.Last)]
+        private static void Postfix(Il2CppTLD.Cooking.CookableItem __instance, ref Il2CppTLD.Cooking.CookableItem.Cookablility __result)
+        {
+            CookingRecipeSkillCompatibility.RemoveSatisfiedSkillRequirement(__instance, ref __result);
+        }
+    }
+
+    [HarmonyPatch(typeof(Il2CppTLD.Cooking.CookableItem), nameof(Il2CppTLD.Cooking.CookableItem.GetPotCookability))]
+    internal static class CookableItemGetPotCookabilityPatch
+    {
+        [HarmonyPriority(Priority.Last)]
+        private static void Postfix(Il2CppTLD.Cooking.CookableItem __instance, ref Il2CppTLD.Cooking.CookableItem.Cookablility __result)
+        {
+            CookingRecipeSkillCompatibility.RemoveSatisfiedSkillRequirement(__instance, ref __result);
+        }
+    }
+
+    [HarmonyPatch(typeof(Il2CppTLD.Cooking.CookableItem), nameof(Il2CppTLD.Cooking.CookableItem.CanCookItem))]
+    internal static class CookableItemCanCookItemPatch
+    {
+        [HarmonyPriority(Priority.Last)]
+        private static void Postfix(Il2CppTLD.Cooking.CookableItem __instance, CookingPotItem __0, Inventory __1, ref bool __result)
+        {
+            if (__result || !Core.IsGameplayActive || __instance.m_Recipe == null) return;
+
+            Il2CppTLD.Cooking.CookableItem.Cookablility cookability = __instance.GetCookability(__0, __1);
+            __result = cookability == Il2CppTLD.Cooking.CookableItem.Cookablility.Cookable;
         }
     }
 
