@@ -68,7 +68,7 @@ namespace ExpandedSkills.Framework
             if (TierPointsBySkill.TryGetValue(skill.m_SkillType, out TierPointCache cached) && SourceMatches(skill.m_TierPoints, cached.Vanilla)) return cached.Expanded;
 
             int[] vanilla = ReadVanillaTierPoints(skill);
-            int[] expanded = ExpandTierPoints(vanilla);
+            int[] expanded = ExpandTierPoints(skill.m_SkillType, vanilla);
             TierPointsBySkill[skill.m_SkillType] = new TierPointCache(vanilla, expanded);
             return expanded;
         }
@@ -132,17 +132,18 @@ namespace ExpandedSkills.Framework
             return values;
         }
 
-        private static int[] ExpandTierPoints(int[] vanilla)
+        private static int[] ExpandTierPoints(SkillType skillType, int[] vanilla)
         {
             int[] expanded = new int[MaxLevel];
             Array.Copy(vanilla, expanded, Math.Min(vanilla.Length, 5));
 
-            int lastDelta = Math.Max(1, expanded[4] - expanded[3]);
-            int deltaGrowth = Math.Max(1, lastDelta / 2);
+            int vanillaLevelFourToFiveXp = Math.Max(1, expanded[4] - expanded[3]);
             for (int i = 5; i < expanded.Length; i++)
             {
-                lastDelta += deltaGrowth;
-                expanded[i] = expanded[i - 1] + lastDelta;
+                int level = i + 1;
+                int extraXp = ExpandedSkillsSettingsManager.GetExtraXp(skillType, level);
+                int levelCost = vanillaLevelFourToFiveXp + Math.Max(0, extraXp);
+                expanded[i] = expanded[i - 1] + levelCost;
             }
 
             return expanded;

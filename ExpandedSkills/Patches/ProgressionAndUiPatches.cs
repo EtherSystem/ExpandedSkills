@@ -138,8 +138,24 @@ namespace ExpandedSkills.Patches
             if (skill == null) return true;
 
             int vanillaNoBenefitLevel = Math.Max(1, Math.Min(5, __instance.m_NoBenefitAtSkillLevel));
-            int expandedNoBenefitLevel = vanillaNoBenefitLevel * 2 - 1;
+            int expandedNoBenefitLevel = Math.Min(ExpandedSkillProgression.MaxLevel, vanillaNoBenefitLevel * 2);
             __result = ExpandedSkillProgression.GetRealLevel(skill) >= expandedNoBenefitLevel;
+            return false;
+        }
+    }
+
+    [HarmonyPatch(typeof(Il2CppTLD.Cooking.RecipeData), nameof(Il2CppTLD.Cooking.RecipeData.HasCookingSkills))]
+    internal static class RecipeDataHasCookingSkillsPatch
+    {
+        [HarmonyPriority(Priority.Last)]
+        private static bool Prefix(Il2CppTLD.Cooking.RecipeData __instance, ref bool __result)
+        {
+            if (!Core.IsGameplayActive) return true;
+
+            Skill_Cooking skill = GameManager.GetSkillCooking();
+            if (skill == null || !ExpandedSkillRegistry.TryGet(skill, out _)) return true;
+
+            __result = ExpandedSkillProgression.GetRealLevel(skill) >= __instance.RequiredSkillLevel;
             return false;
         }
     }
@@ -152,7 +168,7 @@ namespace ExpandedSkills.Patches
 
             Skill_Cooking skill = GameManager.GetSkillCooking();
             if (skill == null || !ExpandedSkillRegistry.TryGet(skill, out _)) return;
-            if (!ExpandedSkillProgression.HasRewardLevel(skill, item.m_Recipe.RequiredSkillLevel)) return;
+            if (ExpandedSkillProgression.GetRealLevel(skill) < item.m_Recipe.RequiredSkillLevel) return;
 
             result = (Il2CppTLD.Cooking.CookableItem.Cookablility)((int)result & ~(int)Il2CppTLD.Cooking.CookableItem.Cookablility.SkillTooLow);
         }
@@ -379,8 +395,6 @@ namespace ExpandedSkills.Patches
             if (!Core.IsGameplayActive) return true;
             if (!ExpandedSkillRegistry.TryGet(__instance, out _)) return true;
 
-            // Vanilla gameplay only has five reward tiers. Keep the real 1-10
-            // progression internal and expose only its mapped 0-4 reward index.
             __result = ExpandedSkillProgression.GetRewardTierIndex(__instance);
             return false;
         }
