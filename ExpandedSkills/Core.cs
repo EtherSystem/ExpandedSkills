@@ -2,7 +2,7 @@ using ExpandedSkills.Framework;
 using ExpandedSkills.Patches;
 using ExpandedSkills.Persistence;
 
-[assembly: MelonInfo(typeof(ExpandedSkills.Core), "ExpandedSkills", "1.1.2", "EtherSystem", null)]
+[assembly: MelonInfo(typeof(ExpandedSkills.Core), "ExpandedSkills", "1.1.3", "EtherSystem", null)]
 [assembly: MelonGame("Hinterland", "TheLongDark")]
 
 namespace ExpandedSkills

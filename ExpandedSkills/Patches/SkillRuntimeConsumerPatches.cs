@@ -68,6 +68,63 @@ namespace ExpandedSkills.Patches
         }
     }
 
+    [HarmonyPatch(typeof(CookingPotItem), nameof(CookingPotItem.GetTotalCookMultiplier))]
+    internal static class CookingFinalCookMultiplierConsumerPatch
+    {
+        [HarmonyPriority(Priority.First)]
+        private static void Postfix(CookingPotItem __instance, ref float __result)
+        {
+            if (!Core.IsGameplayActive) return;
+            Skill_Cooking skill = GameManager.GetSkillCooking();
+            if (__instance == null || skill == null) return;
+
+            float skillScale = Mathf.Clamp01(1f - ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingTimeReduction, skill) / 100f);
+            __result = __instance.m_CookingTimeMultiplier * skillScale;
+            SkillActionDiagnostics.LogSample(
+                SkillType.Cooking,
+                "CookingPotItem.GetTotalCookMultiplier",
+                $"Surface multiplier=x{SkillActionDiagnostics.Number(__instance.m_CookingTimeMultiplier)} | Configured ES skill scale=x{SkillActionDiagnostics.Number(skillScale)} | Final total cook multiplier=x{SkillActionDiagnostics.Number(__result)}");
+        }
+    }
+
+    [HarmonyPatch(typeof(CookingPotItem), nameof(CookingPotItem.GetTotalBoilMultiplier))]
+    internal static class CookingFinalBoilMultiplierConsumerPatch
+    {
+        [HarmonyPriority(Priority.First)]
+        private static void Postfix(CookingPotItem __instance, ref float __result)
+        {
+            if (!Core.IsGameplayActive) return;
+            Skill_Cooking skill = GameManager.GetSkillCooking();
+            if (__instance == null || skill == null) return;
+
+            float skillScale = Mathf.Clamp01(1f - ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingTimeReduction, skill) / 100f);
+            __result = __instance.m_BoilingTimeMultiplier * skillScale;
+            SkillActionDiagnostics.LogSample(
+                SkillType.Cooking,
+                "CookingPotItem.GetTotalBoilMultiplier",
+                $"Surface multiplier=x{SkillActionDiagnostics.Number(__instance.m_BoilingTimeMultiplier)} | Configured ES skill scale=x{SkillActionDiagnostics.Number(skillScale)} | Final total boil multiplier=x{SkillActionDiagnostics.Number(__result)}");
+        }
+    }
+
+    [HarmonyPatch(typeof(CookingPotItem), nameof(CookingPotItem.GetTotalReadyMultiplier))]
+    internal static class CookingFinalReadyMultiplierConsumerPatch
+    {
+        [HarmonyPriority(Priority.First)]
+        private static void Postfix(CookingPotItem __instance, ref float __result)
+        {
+            if (!Core.IsGameplayActive) return;
+            Skill_Cooking skill = GameManager.GetSkillCooking();
+            if (__instance == null || skill == null) return;
+
+            float skillScale = 1f + ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingReadyTimeIncrease, skill) / 100f;
+            __result = __instance.m_ReadyTimeMultiplier * skillScale;
+            SkillActionDiagnostics.LogSample(
+                SkillType.Cooking,
+                "CookingPotItem.GetTotalReadyMultiplier",
+                $"Surface multiplier=x{SkillActionDiagnostics.Number(__instance.m_ReadyTimeMultiplier)} | Configured ES skill scale=x{SkillActionDiagnostics.Number(skillScale)} | Final total ready multiplier=x{SkillActionDiagnostics.Number(__result)}");
+        }
+    }
+
     [HarmonyPatch(typeof(FireManager), nameof(FireManager.CalculateFireStartSuccess))]
     internal static class FireFinalSuccessConsumerPatch
     {
