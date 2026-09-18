@@ -98,12 +98,35 @@ namespace ExpandedSkills.Patches
         }
     }
 
+    internal static class NativeFirestartingValueReadContext
+    {
+        [ThreadStatic]
+        private static int _baseChanceReadDepth;
+
+        internal static bool ReadingBaseChance => _baseChanceReadDepth > 0;
+
+        internal static int ReadBaseChance(Skill_Firestarting skill)
+        {
+            if (skill == null) return 0;
+            _baseChanceReadDepth++;
+            try
+            {
+                return skill.GetBaseChanceSuccess();
+            }
+            finally
+            {
+                _baseChanceReadDepth = Math.Max(0, _baseChanceReadDepth - 1);
+            }
+        }
+    }
+
     [HarmonyPatch(typeof(Skill_Firestarting), nameof(Skill_Firestarting.GetBaseChanceSuccess))]
     internal static class FirestartingSuccessPatch
     {
         private static bool Prefix(Skill_Firestarting __instance, ref int __result)
         {
             if (!Core.IsGameplayActive) return true;
+            if (NativeFirestartingValueReadContext.ReadingBaseChance) return true;
             __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.FirestartingSuccessChance, __instance);
             return false;
         }
