@@ -65,7 +65,7 @@ Not everything got tested ofc so if you spot any weird behaviors or true incompa
 ## Installation
 
 1. Install MelonLoader 0.7.2 *non-nightly*.
-2. Install [ModData](https://github.com/dommrogers/ModData).
+2. Install [ModData](https://github.com/dommrogers/ModData) and [ModSettings](https://github.com/DigitalzombieTLD/ModSettings/).
 3. Place `ExpandedSkills.dll` in your `Mods` folder.
 
 ---
