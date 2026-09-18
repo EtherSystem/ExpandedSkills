@@ -158,68 +158,6 @@ namespace ExpandedSkills.Patches
         }
     }
 
-    internal static class CarcassBareHandsReward
-    {
-        internal static bool IsActive()
-        {
-            Skill_CarcassHarvesting skill = GameManager.GetSkillCarcassHarvesting();
-            return skill != null && ExpandedSkillProgression.GetRealLevel(skill) >= 5;
-        }
-
-        internal static void EnsureOption(Panel_BodyHarvest panel)
-        {
-            if (!IsActive() || panel == null || panel.m_Tools == null || !panel.IsTabHarvestSelected()) return;
-
-            for (int i = 0; i < panel.m_Tools.Count; i++)
-            {
-                if (panel.m_Tools[i] == null) return;
-            }
-
-            panel.m_Tools.Add(null);
-            panel.m_SelectedToolItemIndex = Mathf.Clamp(panel.m_SelectedToolItemIndex, 0, panel.m_Tools.Count - 1);
-            panel.RefreshToolSelection();
-        }
-    }
-
-    [HarmonyPatch(typeof(Panel_BodyHarvest), nameof(Panel_BodyHarvest.RefreshTools), new[] { typeof(BodyHarvest) })]
-    internal static class CarcassBareHandsToolListPatch
-    {
-        private static void Postfix(Panel_BodyHarvest __instance)
-        {
-            if (!Core.IsGameplayActive) return;
-            CarcassBareHandsReward.EnsureOption(__instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(Panel_BodyHarvest), nameof(Panel_BodyHarvest.MakeDefaultSelections))]
-    internal static class CarcassBareHandsDefaultSelectionPatch
-    {
-        private static void Postfix(Panel_BodyHarvest __instance)
-        {
-            if (!Core.IsGameplayActive) return;
-            CarcassBareHandsReward.EnsureOption(__instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(Panel_BodyHarvest), nameof(Panel_BodyHarvest.Refresh))]
-    internal static class CarcassBareHandsRefreshPatch
-    {
-        private static void Postfix(Panel_BodyHarvest __instance)
-        {
-            if (!Core.IsGameplayActive) return;
-            CarcassBareHandsReward.EnsureOption(__instance);
-        }
-    }
-
-    [HarmonyPatch(typeof(Panel_BodyHarvest), nameof(Panel_BodyHarvest.ShouldApplyInitialBarehandedHarvestLoss))]
-    internal static class CarcassBareHandsInitialLossPatch
-    {
-        private static void Postfix(ref bool __result)
-        {
-            if (!Core.IsGameplayActive) return;
-            if (CarcassBareHandsReward.IsActive()) __result = false;
-        }
-    }
 
     internal static class RuinedClothingRepair
     {

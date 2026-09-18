@@ -38,7 +38,9 @@ namespace ExpandedSkills.Framework
 
             foreach (ExpandedSkillDefinition definition in ExpandedSkillRegistry.All)
             {
-                ApplyTierPointData(definition.GetSkill());
+                Skill skill = definition.GetSkill();
+                ApplyTierPointData(skill);
+                ExpandedSkillRewardData.ApplyNativeRuntimeData(skill);
             }
         }
 

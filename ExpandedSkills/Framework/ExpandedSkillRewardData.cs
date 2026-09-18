@@ -5,8 +5,6 @@ namespace ExpandedSkills.Framework
         internal static readonly int[] CookingCalorieBonus = { 0, 5, 10, 12, 15, 18, 20, 22, 25, 25 };
         internal static readonly int[] CookingTimeReduction = { 0, 0, 0, 5, 10, 15, 20, 25, 30, 30 };
         internal static readonly int[] CookingReadyTimeIncrease = { 0, 0, 0, 0, 0, 10, 20, 20, 20, 20 };
-        internal static readonly float[] CookingLowConditionChance = { 20f, 18f, 15f, 12f, 10f, 8f, 5f, 2f, 0f, 0f };
-        internal static readonly float[] CookingMaximumCondition = { 75f, 75f, 75f, 80f, 85f, 85f, 85f, 95f, 100f, 100f };
 
         internal static readonly int[] FirestartingSuccessChance = { 40, 48, 55, 60, 65, 70, 75, 82, 90, 90 };
         internal static readonly int[] FirestartingDurationIncrease = { 0, 5, 10, 10, 10, 18, 25, 38, 50, 50 };
@@ -14,7 +12,7 @@ namespace ExpandedSkills.Framework
 
         internal static readonly int[] CarcassMeatTimeReduction = { 0, 5, 10, 18, 25, 28, 30, 40, 50, 50 };
         internal static readonly int[] CarcassHideGutTimeReduction = { 0, 0, 0, 5, 10, 15, 20, 25, 30, 30 };
-        internal static readonly int[] CarcassBarehandedFrozenThreshold = { 0, 0, 0, 0, 50, 60, 75, 90, 100, 100 };
+        internal static readonly int[] CarcassFrozenThreshold = { 50, 50, 50, 50, 50, 60, 75, 90, 100, 100 };
 
         internal static readonly float[] IceFishingLineBreakChance = { 12f, 10f, 8f, 6f, 5f, 4f, 3f, 2f, 1f, 0f };
         internal static readonly int[] IceFishingTimeReduction = { 0, 2, 5, 7, 10, 15, 20, 25, 30, 30 };
@@ -53,6 +51,75 @@ namespace ExpandedSkills.Framework
         internal static readonly float[] GunsmithingMillingSuccess = { 50f, 55f, 60f, 68f, 75f, 82f, 90f, 95f, 100f, 100f };
         internal static readonly float[] GunsmithingMillingCondition = { 40f, 50f, 60f, 70f, 80f, 85f, 90f, 95f, 100f, 100f };
 
+
+        internal static void ApplyNativeRuntimeData(Skill skill)
+        {
+            if (skill == null) return;
+
+            int levelIndex = GetLevelIndex(skill);
+            int rewardIndex = ExpandedSkillProgression.GetRewardTierIndex(skill);
+
+            switch (skill)
+            {
+                case Skill_Cooking cooking:
+                    cooking.m_LevelWhereNoCalorieLossFromSmashing = 3;
+                    cooking.m_LevelWhereNoParasitesOrFoodPoisoning = 5;
+                    cooking.m_CaloriePercentBonus[rewardIndex] = CookingCalorieBonus[levelIndex];
+                    cooking.m_CookingTimeReducePercent[rewardIndex] = CookingTimeReduction[levelIndex];
+                    cooking.m_ReadyTimeIncreasePercent[rewardIndex] = CookingReadyTimeIncrease[levelIndex];
+                    break;
+                case Skill_Firestarting firestarting:
+                    firestarting.m_LevelWhereTinderNotRequired = 3;
+                    firestarting.m_BaseSuccessChance[rewardIndex] = FirestartingSuccessChance[levelIndex];
+                    firestarting.m_DurationPercentIncrease[rewardIndex] = FirestartingDurationIncrease[levelIndex];
+                    firestarting.m_StartPercentIncrease[rewardIndex] = FirestartingTimeReduction[levelIndex];
+                    break;
+                case Skill_CarcassHarvesting carcass:
+                    carcass.m_FrozenThresholdPercent[rewardIndex] = CarcassFrozenThreshold[levelIndex];
+                    carcass.m_MeatTimePercentDecrease[rewardIndex] = CarcassMeatTimeReduction[levelIndex];
+                    carcass.m_HideGutTimePercentDecrease[rewardIndex] = CarcassHideGutTimeReduction[levelIndex];
+                    break;
+                case Skill_IceFishing iceFishing:
+                    iceFishing.m_LineBreakOnCatchChance[rewardIndex] = Mathf.RoundToInt(IceFishingLineBreakChance[levelIndex]);
+                    iceFishing.m_ReduceFishingTimePercent[rewardIndex] = IceFishingTimeReduction[levelIndex];
+                    iceFishing.m_IncreaseFishWeightPercent[rewardIndex] = IceFishingWeightIncrease[levelIndex];
+                    break;
+                case Skill_ClothingRepair mending:
+                    mending.m_BaseSuccessChance[rewardIndex] = MendingSuccessChance[levelIndex];
+                    mending.m_RepairTimePercentDecrease[rewardIndex] = MendingTimeReduction[levelIndex];
+                    mending.m_ItemConditionPercentIncrease[rewardIndex] = MendingConditionIncrease[levelIndex];
+                    mending.m_SewingToolDegradeDecrease[rewardIndex] = MendingToolWearReduction[levelIndex];
+                    break;
+                case Skill_Archery archery:
+                    archery.m_LevelWhereCanFireFromCrouch = 5;
+                    archery.m_SwayReduction[rewardIndex] = ArcherySwayReduction[levelIndex];
+                    archery.m_DamageIncrease[rewardIndex] = ArcheryDamageIncrease[levelIndex];
+                    archery.m_CriticalHitChanceIncrease[rewardIndex] = ArcheryCriticalChanceIncrease[levelIndex];
+                    archery.m_BleedOutTimeReduction[rewardIndex] = ArcheryBleedTimeReduction[levelIndex];
+                    archery.m_ConditionDegradeOnUseReduction[rewardIndex] = ArcheryConditionWearReduction[levelIndex];
+                    break;
+                case Skill_Rifle rifle:
+                    rifle.m_CriticalHitChanceIncrease[rewardIndex] = RifleCriticalChanceIncrease[levelIndex];
+                    rifle.m_ConditionRepairBonus[rewardIndex] = RifleRepairBonus[levelIndex];
+                    rifle.m_AccuracyRangeIncrease[rewardIndex] = RifleAccuracyRangeIncrease[levelIndex];
+                    rifle.m_DamageIncrease[rewardIndex] = RifleDamageIncrease[levelIndex];
+                    rifle.m_StabilityBonus[rewardIndex] = RifleStabilityBonus[levelIndex];
+                    rifle.m_EffectiveRange[rewardIndex] = Mathf.RoundToInt(RifleEffectiveRange[levelIndex]);
+                    rifle.m_ConditionDegradeOnUseReduction[rewardIndex] = RifleConditionWearReduction[levelIndex];
+                    rifle.m_AimAssistAngleDegrees[rewardIndex] = RifleAimAssistAngle[levelIndex];
+                    break;
+                case Skill_Revolver revolver:
+                    revolver.m_CriticalHitChanceIncrease[rewardIndex] = RevolverCriticalChanceIncrease[levelIndex];
+                    revolver.m_ConditionRepairBonus[rewardIndex] = RevolverRepairBonus[levelIndex];
+                    revolver.m_RecoilCompensation[rewardIndex] = RevolverRecoilCompensation[levelIndex];
+                    revolver.m_DamageIncrease[rewardIndex] = RevolverDamageIncrease[levelIndex];
+                    revolver.m_ConditionDegradeOnUseReduction[rewardIndex] = RevolverConditionWearReduction[levelIndex];
+                    revolver.m_AimAssistAngleDegrees[rewardIndex] = RevolverAimAssistAngle[levelIndex];
+                    revolver.m_StruggleBonus[rewardIndex] = RevolverStruggleBonus[levelIndex];
+                    break;
+            }
+        }
+
         internal static int Get(int[] values, Skill skill) => values[GetLevelIndex(skill)];
         internal static float Get(float[] values, Skill skill) => values[GetLevelIndex(skill)];
 
@@ -72,7 +139,6 @@ namespace ExpandedSkills.Framework
 
             List<string> lines = SplitLines(template);
             if ((index & 1) == 1 && index < ExpandedSkillProgression.MaxTierIndex) RemoveNewTokenlessLines(skill, templateIndex, lines);
-            if (skill.m_SkillType == SkillType.CarcassHarvesting && CarcassBarehandedFrozenThreshold[index] <= 0) RemoveLinesContaining(lines, "{frozen-threshold}");
             if (skill.m_SkillType == SkillType.IceFishing && index >= ExpandedSkillProgression.MaxTierIndex) RemoveLinesContaining(lines, "{chancebreak}");
 
             string text = string.Join("\n", lines);
@@ -114,23 +180,23 @@ namespace ExpandedSkills.Framework
         {
             for (int i = lines.Count - 1; i >= 0; i--)
             {
-                if (lines[i].Contains(token, StringComparison.Ordinal)) lines.RemoveAt(i);
+                if (lines[i].Contains(token, StringComparison.OrdinalIgnoreCase)) lines.RemoveAt(i);
             }
         }
 
         private static string ReplaceTokens(Skill skill, int index, string text)
         {
-            return skill switch
+            return skill.m_SkillType switch
             {
-                Skill_Cooking cooking => ReplaceCooking(text, index),
-                Skill_Firestarting firestarting => ReplaceFirestarting(text, index),
-                Skill_CarcassHarvesting carcass => ReplaceCarcass(text, index),
-                Skill_IceFishing iceFishing => ReplaceIceFishing(text, index),
-                Skill_ClothingRepair mending => ReplaceMending(text, index),
-                Skill_Archery archery => ReplaceArchery(text, index),
-                Skill_Rifle rifle => ReplaceRifle(rifle, text, index),
-                Skill_Revolver revolver => ReplaceRevolver(revolver, text, index),
-                Skill_Gunsmithing gunsmithing => ReplaceGunsmithing(text, index),
+                SkillType.Cooking => ReplaceCooking(text, index),
+                SkillType.Firestarting => ReplaceFirestarting(text, index),
+                SkillType.CarcassHarvesting => ReplaceCarcass(text, index),
+                SkillType.IceFishing => ReplaceIceFishing(text, index),
+                SkillType.ClothingRepair => ReplaceMending(text, index),
+                SkillType.Archery => ReplaceArchery(text, index),
+                SkillType.Rifle => ReplaceRifle(text, index),
+                SkillType.Revolver => ReplaceRevolver(text, index),
+                SkillType.Gunsmithing => ReplaceGunsmithing(text, index),
                 _ => text
             };
         }
@@ -138,135 +204,90 @@ namespace ExpandedSkills.Framework
         private static string ReplaceCooking(string text, int index)
         {
             return text
-                .Replace("{cal-bonus}", "+" + CookingCalorieBonus[index] + "%")
-                .Replace("{time-bonus}", CookingTimeReduction[index] + "%")
-                .Replace("{ready-bonus}", CookingReadyTimeIncrease[index] + "%");
+                .Replace("{cal-bonus}", "+" + CookingCalorieBonus[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{time-bonus}", CookingTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{ready-bonus}", CookingReadyTimeIncrease[index] + "%", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReplaceFirestarting(string text, int index)
         {
             return text
-                .Replace("{roll-bonus}", FirestartingSuccessChance[index].ToString())
-                .Replace("{duration-bonus}", FirestartingDurationIncrease[index] + "%")
-                .Replace("{speed-bonus}", FirestartingTimeReduction[index] + "%");
+                .Replace("{roll-bonus}", FirestartingSuccessChance[index].ToString(), StringComparison.OrdinalIgnoreCase)
+                .Replace("{duration-bonus}", FirestartingDurationIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{speed-bonus}", FirestartingTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReplaceCarcass(string text, int index)
         {
             return text
-                .Replace("{duration-bonus}", CarcassMeatTimeReduction[index] + "%")
-                .Replace("{meat-bonus}", CarcassMeatTimeReduction[index] + "%")
-                .Replace("{hidegut-bonus}", CarcassHideGutTimeReduction[index] + "%")
-                .Replace("{frozen-threshold}", CarcassBarehandedFrozenThreshold[index] + "%");
+                .Replace("{duration-bonus}", CarcassMeatTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{meat-bonus}", CarcassMeatTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{hidegut-bonus}", CarcassHideGutTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{frozen-threshold}", CarcassFrozenThreshold[index] + "%", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReplaceIceFishing(string text, int index)
         {
             return text
-                .Replace("{chancebreak}", Number(IceFishingLineBreakChance[index]) + "%")
-                .Replace("{time-bonus}", IceFishingTimeReduction[index] + "%")
-                .Replace("{weight-bonus}", IceFishingWeightIncrease[index] + "%");
+                .Replace("{chancebreak}", Number(IceFishingLineBreakChance[index]) + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{time-bonus}", IceFishingTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{weight-bonus}", IceFishingWeightIncrease[index] + "%", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReplaceMending(string text, int index)
         {
             return text
-                .Replace("{roll-bonus}", MendingSuccessChance[index].ToString())
-                .Replace("{time-bonus}", MendingTimeReduction[index] + "%")
-                .Replace("{cond-bonus}", MendingConditionIncrease[index] + "%")
-                .Replace("{sewing-bonus}", MendingToolWearReduction[index] + "%");
+                .Replace("{roll-bonus}", MendingSuccessChance[index].ToString(), StringComparison.OrdinalIgnoreCase)
+                .Replace("{time-bonus}", MendingTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{cond-bonus}", MendingConditionIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{sewing-bonus}", MendingToolWearReduction[index] + "%", StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReplaceArchery(string text, int index)
         {
             return text
-                .Replace("{degrade-bonus}", ArcheryConditionWearReduction[index] + "%")
-                .Replace("{crit-bonus}", ArcheryCriticalChanceIncrease[index] + "%")
-                .Replace("{damage-bonus}", ArcheryDamageIncrease[index] + "%")
-                .Replace("{sway-bonus}", ArcherySwayReduction[index] + "%")
-                .Replace("{bleed-bonus}", ArcheryBleedTimeReduction[index] + "%");
+                .Replace("{degrade-bonus}", ArcheryConditionWearReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{crit-bonus}", ArcheryCriticalChanceIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{damage-bonus}", ArcheryDamageIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{sway-bonus}", ArcherySwayReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{bleed-bonus}", ArcheryBleedTimeReduction[index] + "%", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string ReplaceRifle(Skill_Rifle skill, string text, int index)
+        private static string ReplaceRifle(string text, int index)
         {
             return text
-                .Replace("{degrade-bonus}", RifleConditionWearReduction[index] + "%")
-                .Replace("{crit-bonus}", RifleCriticalChanceIncrease[index] + "%")
-                .Replace("{repair-bonus}", RifleRepairBonus[index].ToString())
-                .Replace("{accuracy-bonus}", RifleAccuracyRangeIncrease[index] + "%")
-                .Replace("{damage-bonus}", RifleDamageIncrease[index] + "%")
-                .Replace("{aim-bonus}", GetClosestAimAssistText(skill, RifleAimAssistAngle[index]));
+                .Replace("{degrade-bonus}", RifleConditionWearReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{crit-bonus}", RifleCriticalChanceIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{repair-bonus}", RifleRepairBonus[index].ToString(), StringComparison.OrdinalIgnoreCase)
+                .Replace("{accuracy-bonus}", RifleAccuracyRangeIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{damage-bonus}", RifleDamageIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{aim-bonus}", GetAimAssistText(RifleAimAssistAngle[index]), StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string ReplaceRevolver(Skill_Revolver skill, string text, int index)
+        private static string ReplaceRevolver(string text, int index)
         {
             return text
-                .Replace("{degrade-bonus}", RevolverConditionWearReduction[index] + "%")
-                .Replace("{crit-bonus}", RevolverCriticalChanceIncrease[index] + "%")
-                .Replace("{repair-bonus}", RevolverRepairBonus[index].ToString())
-                .Replace("{recoil-bonus}", RevolverRecoilCompensation[index] + "%")
-                .Replace("{damage-bonus}", RevolverDamageIncrease[index] + "%")
-                .Replace("{struggle-bonus}", RevolverStruggleBonus[index] + "%")
-                .Replace("{aim-bonus}", GetClosestAimAssistText(skill, RevolverAimAssistAngle[index]));
+                .Replace("{degrade-bonus}", RevolverConditionWearReduction[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{crit-bonus}", RevolverCriticalChanceIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{repair-bonus}", RevolverRepairBonus[index].ToString(), StringComparison.OrdinalIgnoreCase)
+                .Replace("{recoil-bonus}", RevolverRecoilCompensation[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{damage-bonus}", RevolverDamageIncrease[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{struggle-bonus}", RevolverStruggleBonus[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{aim-bonus}", GetAimAssistText(RevolverAimAssistAngle[index]), StringComparison.OrdinalIgnoreCase);
         }
 
         private static string ReplaceGunsmithing(string text, int index)
         {
             return text
-                .Replace("{craft-condition}", GunsmithingAmmoCondition[index] + "%")
-                .Replace("{harvest-success}", Number(GunsmithingHarvestSuccess[index]) + "%")
-                .Replace("{milling-condition}", Number(GunsmithingMillingCondition[index]) + "%")
-                .Replace("{milling-success}", Number(GunsmithingMillingSuccess[index]) + "%");
+                .Replace("{craft-condition}", GunsmithingAmmoCondition[index] + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{harvest-success}", Number(GunsmithingHarvestSuccess[index]) + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{milling-condition}", Number(GunsmithingMillingCondition[index]) + "%", StringComparison.OrdinalIgnoreCase)
+                .Replace("{milling-success}", Number(GunsmithingMillingSuccess[index]) + "%", StringComparison.OrdinalIgnoreCase);
         }
 
-        private static string GetClosestAimAssistText(Skill_Rifle skill, float value)
+        private static string GetAimAssistText(float value)
         {
-            if (skill.m_AimAssistAngleDegrees == null || skill.m_AimAssistTierText == null) return Localization.Get("GAMEPLAY_None");
-
-            int count = Math.Min(skill.m_AimAssistAngleDegrees.Length, skill.m_AimAssistTierText.Length);
-            if (count <= 0) return Localization.Get("GAMEPLAY_None");
-
-            int closest = 0;
-            float closestDistance = Math.Abs(skill.m_AimAssistAngleDegrees[0] - value);
-            for (int i = 1; i < count; i++)
-            {
-                float distance = Math.Abs(skill.m_AimAssistAngleDegrees[i] - value);
-                if (distance < closestDistance || Math.Abs(distance - closestDistance) < 0.0001f && skill.m_AimAssistAngleDegrees[i] > skill.m_AimAssistAngleDegrees[closest])
-                {
-                    closest = i;
-                    closestDistance = distance;
-                }
-            }
-
-            return GetLocalizedAimAssist(skill.m_AimAssistTierText[closest]);
-        }
-
-        private static string GetClosestAimAssistText(Skill_Revolver skill, float value)
-        {
-            if (skill.m_AimAssistAngleDegrees == null || skill.m_AimAssistTierText == null) return Localization.Get("GAMEPLAY_None");
-
-            int count = Math.Min(skill.m_AimAssistAngleDegrees.Length, skill.m_AimAssistTierText.Length);
-            if (count <= 0) return Localization.Get("GAMEPLAY_None");
-
-            int closest = 0;
-            float closestDistance = Math.Abs(skill.m_AimAssistAngleDegrees[0] - value);
-            for (int i = 1; i < count; i++)
-            {
-                float distance = Math.Abs(skill.m_AimAssistAngleDegrees[i] - value);
-                if (distance < closestDistance || Math.Abs(distance - closestDistance) < 0.0001f && skill.m_AimAssistAngleDegrees[i] > skill.m_AimAssistAngleDegrees[closest])
-                {
-                    closest = i;
-                    closestDistance = distance;
-                }
-            }
-
-            return GetLocalizedAimAssist(skill.m_AimAssistTierText[closest]);
-        }
-
-        private static string GetLocalizedAimAssist(string localizationId)
-        {
-            string value = Localization.Get(localizationId);
-            return string.IsNullOrEmpty(value) ? Localization.Get("GAMEPLAY_None") : value;
+            return value <= 0f ? Localization.Get("GAMEPLAY_None") : Number(value) + "°";
         }
 
         private static string Number(float value) => value.ToString("0.##");

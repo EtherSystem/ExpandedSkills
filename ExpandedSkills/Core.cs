@@ -2,7 +2,7 @@ using ExpandedSkills.Framework;
 using ExpandedSkills.Patches;
 using ExpandedSkills.Persistence;
 
-[assembly: MelonInfo(typeof(ExpandedSkills.Core), "ExpandedSkills", "1.1.0", "EtherSystem", null)]
+[assembly: MelonInfo(typeof(ExpandedSkills.Core), "ExpandedSkills", "1.1.1", "EtherSystem", null)]
 [assembly: MelonGame("Hinterland", "TheLongDark")]
 
 namespace ExpandedSkills
@@ -108,6 +108,7 @@ namespace ExpandedSkills
             s_GameplayActive = true;
             ExpandedSkillProgression.ApplyAllTierPointData();
             SaveDataManager.OnGameplaySceneInitialized();
+            ExpandedSkillProgression.ApplyAllTierPointData();
             SkillLevelTracker.ArmForGameplayScene();
         }
 

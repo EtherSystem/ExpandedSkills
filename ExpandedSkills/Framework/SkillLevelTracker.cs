@@ -52,6 +52,7 @@ namespace ExpandedSkills.Framework
                 {
                     LastLevels[skill.m_SkillType] = currentLevel;
                     LastPoints[skill.m_SkillType] = currentPoints;
+                    ExpandedSkillRewardData.ApplyNativeRuntimeData(skill);
                     continue;
                 }
 
@@ -63,6 +64,7 @@ namespace ExpandedSkills.Framework
 
                 if (currentLevel == previousLevel) continue;
                 LastLevels[skill.m_SkillType] = currentLevel;
+                ExpandedSkillRewardData.ApplyNativeRuntimeData(skill);
                 LogLevelChange(skill, previousLevel, currentLevel);
             }
         }
@@ -76,7 +78,9 @@ namespace ExpandedSkills.Framework
             LastLevels[skill.m_SkillType] = currentLevel;
             LastPoints[skill.m_SkillType] = skill.GetPoints();
             SaveDataManager.OnSkillPointsChanged(skill);
-            if (currentLevel != lastLevel) LogLevelChange(skill, lastLevel, currentLevel);
+            if (currentLevel == lastLevel) return;
+            ExpandedSkillRewardData.ApplyNativeRuntimeData(skill);
+            LogLevelChange(skill, lastLevel, currentLevel);
         }
 
         private static void LogLevelChange(Skill skill, int previousLevel, int currentLevel)

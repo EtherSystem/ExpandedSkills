@@ -98,59 +98,12 @@ namespace ExpandedSkills.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Skill_Cooking), nameof(Skill_Cooking.GetConditionLowConditionChance))]
-    internal static class CookingLowConditionPatch
-    {
-        private static bool Prefix(Skill_Cooking __instance, ref float __result)
-        {
-            if (!Core.IsGameplayActive) return true;
-            __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingLowConditionChance, __instance);
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(Skill_Cooking), nameof(Skill_Cooking.GetConditionMaxScale))]
-    internal static class CookingMaxConditionPatch
-    {
-        private static bool Prefix(Skill_Cooking __instance, ref float __result)
-        {
-            if (!Core.IsGameplayActive) return true;
-            __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingMaximumCondition, __instance) / 100f;
-            return false;
-        }
-    }
-
-    internal static class NativeFirestartingValueReadContext
-    {
-        [ThreadStatic]
-        private static int _baseChanceReadDepth;
-
-        internal static bool ReadingBaseChance => _baseChanceReadDepth > 0;
-
-        internal static int ReadBaseChance(Skill_Firestarting skill)
-        {
-            if (skill == null) return 0;
-
-            _baseChanceReadDepth++;
-            try
-            {
-                return skill.GetBaseChanceSuccess();
-            }
-            finally
-            {
-                _baseChanceReadDepth = Math.Max(0, _baseChanceReadDepth - 1);
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(Skill_Firestarting), nameof(Skill_Firestarting.GetBaseChanceSuccess))]
     internal static class FirestartingSuccessPatch
     {
         private static bool Prefix(Skill_Firestarting __instance, ref int __result)
         {
             if (!Core.IsGameplayActive) return true;
-            if (NativeFirestartingValueReadContext.ReadingBaseChance) return true;
-
             __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.FirestartingSuccessChance, __instance);
             return false;
         }
@@ -184,7 +137,7 @@ namespace ExpandedSkills.Patches
         private static bool Prefix(Skill_CarcassHarvesting __instance, ref int __result)
         {
             if (!Core.IsGameplayActive) return true;
-            __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CarcassBarehandedFrozenThreshold, __instance);
+            __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CarcassFrozenThreshold, __instance);
             return false;
         }
     }
@@ -541,58 +494,17 @@ namespace ExpandedSkills.Patches
         }
     }
 
-    [HarmonyPatch(typeof(Skill_Gunsmithing), nameof(Skill_Gunsmithing.GetAmmoCraftingCondition))]
-    internal static class GunsmithingAmmoConditionPatch
+    [HarmonyPatch(typeof(Skill_Gunsmithing), nameof(Skill_Gunsmithing.GetCurrentTier))]
+    internal static class GunsmithingCurrentTierPatch
     {
-        private static bool Prefix(Skill_Gunsmithing __instance, ref int __result)
+        private static void Postfix(Skill_Gunsmithing __instance, ref Skill_Gunsmithing.SkillTier __result)
         {
-            if (!Core.IsGameplayActive) return true;
-            __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingAmmoCondition, __instance);
-            return false;
+            if (!Core.IsGameplayActive) return;
+            __result.m_CraftedAmmoCondition = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingAmmoCondition, __instance);
+            __result.m_HarvestAmmoSuccessChance = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingHarvestSuccess, __instance);
+            __result.m_MillingRepairSuccessChance = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingMillingSuccess, __instance);
+            __result.m_MillingRepairCondition = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingMillingCondition, __instance);
         }
     }
 
-    [HarmonyPatch(typeof(Skill_Gunsmithing), nameof(Skill_Gunsmithing.GetMillingRepairCondition))]
-    internal static class GunsmithingMillingConditionPatch
-    {
-        private static bool Prefix(Skill_Gunsmithing __instance, ref float __result)
-        {
-            if (!Core.IsGameplayActive) return true;
-            __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingMillingCondition, __instance);
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(Skill_Gunsmithing), nameof(Skill_Gunsmithing.GetMillingRepairSuccessChance))]
-    internal static class GunsmithingMillingSuccessPatch
-    {
-        private static bool Prefix(Skill_Gunsmithing __instance, ref float __result)
-        {
-            if (!Core.IsGameplayActive) return true;
-            __result = ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingMillingSuccess, __instance);
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(Skill_Gunsmithing), nameof(Skill_Gunsmithing.RollAmmoHarvestSuccess))]
-    internal static class GunsmithingHarvestRollPatch
-    {
-        private static bool Prefix(Skill_Gunsmithing __instance, ref bool __result)
-        {
-            if (!Core.IsGameplayActive) return true;
-            __result = Utils.RollChance(ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingHarvestSuccess, __instance));
-            return false;
-        }
-    }
-
-    [HarmonyPatch(typeof(Skill_Gunsmithing), nameof(Skill_Gunsmithing.RollMillingRepairSuccess))]
-    internal static class GunsmithingMillingRollPatch
-    {
-        private static bool Prefix(Skill_Gunsmithing __instance, ref bool __result)
-        {
-            if (!Core.IsGameplayActive) return true;
-            __result = Utils.RollChance(ExpandedSkillRewardData.Get(ExpandedSkillRewardData.GunsmithingMillingSuccess, __instance));
-            return false;
-        }
-    }
 }
