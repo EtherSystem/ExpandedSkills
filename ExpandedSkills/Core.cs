@@ -2,7 +2,7 @@ using ExpandedSkills.Framework;
 using ExpandedSkills.Patches;
 using ExpandedSkills.Persistence;
 
-[assembly: MelonInfo(typeof(ExpandedSkills.Core), "ExpandedSkills", "1.1.3", "EtherSystem", null)]
+[assembly: MelonInfo(typeof(ExpandedSkills.Core), "ExpandedSkills", "1.2.0", "EtherSystem", null)]
 [assembly: MelonGame("Hinterland", "TheLongDark")]
 
 namespace ExpandedSkills
@@ -137,7 +137,6 @@ namespace ExpandedSkills
             s_GameplayActive = false;
             if (Instance != null) Instance._dirty = false;
             SkillLevelTracker.ResetForMainMenu();
-            SkillActionDiagnostics.Reset();
             WeaponAnimationLevel10.Reset();
             ExpandedSkillProgression.ResetRuntimeCache();
             SaveDataManager.ForgetLoadedState();
@@ -176,36 +175,6 @@ namespace ExpandedSkills
                 }
 
                 SetSkillPoints(skillType, points);
-            }));
-            uConsole.RegisterCommand("es_skill_test", new Action(() =>
-            {
-                var parameters = uConsole.GetAllParameters();
-                string mode = parameters != null && parameters.Count > 0 ? parameters[0].Trim().ToLowerInvariant() : "status";
-                switch (mode)
-                {
-                    case "on":
-                    case "enable":
-                    case "1":
-                        SkillActionDiagnostics.SetEnabled(true);
-                        uConsole.Log("ExpandedSkills action-source diagnostics enabled. Perform gameplay actions at each level; use 'es_skill_test reset' before repeating a level.");
-                        break;
-                    case "off":
-                    case "disable":
-                    case "0":
-                        SkillActionDiagnostics.SetEnabled(false);
-                        uConsole.Log("ExpandedSkills action-source diagnostics disabled.");
-                        break;
-                    case "reset":
-                        SkillActionDiagnostics.ResetSamples();
-                        uConsole.Log("ExpandedSkills action-source diagnostic samples cleared.");
-                        break;
-                    case "status":
-                        uConsole.Log("ExpandedSkills action-source diagnostics: " + (SkillActionDiagnostics.Enabled ? "ON" : "OFF"));
-                        break;
-                    default:
-                        uConsole.Log("Usage: es_skill_test [on|off|reset|status]");
-                        break;
-                }
             }));
         }
 

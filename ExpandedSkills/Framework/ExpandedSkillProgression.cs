@@ -7,7 +7,7 @@ namespace ExpandedSkills.Framework
     {
         internal const int MaxLevel = 10;
         internal const int MaxTierIndex = MaxLevel - 1;
-        private static readonly int[] RewardTierByRealTier = { 0, 0, 1, 1, 2, 2, 3, 3, 4, 4 };
+        private static readonly int[] RewardTierByRealTier = { 0, 1, 1, 2, 2, 3, 3, 3, 4, 4 };
         private static readonly Dictionary<SkillType, TierPointCache> TierPointsBySkill = new();
 
         private sealed class TierPointCache

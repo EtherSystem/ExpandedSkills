@@ -1,7 +1,11 @@
+using Il2CppInterop.Runtime.InteropTypes.Arrays;
+
 namespace ExpandedSkills.Framework
 {
     internal static class ExpandedSkillRewardData
     {
+        private static int[] s_CookingLowConditionChance;
+        private static int[] s_CookingConditionMax;
         internal static readonly int[] CookingCalorieBonus = { 0, 5, 10, 12, 15, 18, 20, 22, 25, 25 };
         internal static readonly int[] CookingTimeReduction = { 0, 0, 0, 5, 10, 15, 20, 25, 30, 30 };
         internal static readonly int[] CookingReadyTimeIncrease = { 0, 0, 0, 0, 0, 10, 20, 20, 20, 20 };
@@ -57,67 +61,104 @@ namespace ExpandedSkills.Framework
             if (skill == null) return;
 
             int levelIndex = GetLevelIndex(skill);
-            int rewardIndex = ExpandedSkillProgression.GetRewardTierIndex(skill);
 
             switch (skill)
             {
                 case Skill_Cooking cooking:
-                    cooking.m_LevelWhereNoCalorieLossFromSmashing = 3;
-                    cooking.m_LevelWhereNoParasitesOrFoodPoisoning = 5;
-                    cooking.m_CaloriePercentBonus[rewardIndex] = CookingCalorieBonus[levelIndex];
-                    cooking.m_CookingTimeReducePercent[rewardIndex] = CookingTimeReduction[levelIndex];
-                    cooking.m_ReadyTimeIncreasePercent[rewardIndex] = CookingReadyTimeIncrease[levelIndex];
+                    EnsureCookingConditionBaseline(cooking);
+                    int conditionTier = ExpandedSkillProgression.GetRewardTierIndex(cooking);
+                    cooking.m_LevelWhereNoCalorieLossFromSmashing = NativeThreshold(ExpandedSkillProgression.HasRewardLevel(cooking, 3));
+                    cooking.m_LevelWhereNoParasitesOrFoodPoisoning = NativeThreshold(ExpandedSkillProgression.HasRewardLevel(cooking, 5));
+                    Fill(cooking.m_CaloriePercentBonus, CookingCalorieBonus[levelIndex]);
+                    Fill(cooking.m_CookingTimeReducePercent, CookingTimeReduction[levelIndex]);
+                    Fill(cooking.m_ReadyTimeIncreasePercent, CookingReadyTimeIncrease[levelIndex]);
+                    Fill(cooking.m_LowConditionChance, s_CookingLowConditionChance[conditionTier]);
+                    Fill(cooking.m_ConditionMax, s_CookingConditionMax[conditionTier]);
                     break;
                 case Skill_Firestarting firestarting:
-                    firestarting.m_LevelWhereTinderNotRequired = 3;
-                    firestarting.m_BaseSuccessChance[rewardIndex] = FirestartingSuccessChance[levelIndex];
-                    firestarting.m_DurationPercentIncrease[rewardIndex] = FirestartingDurationIncrease[levelIndex];
-                    firestarting.m_StartPercentIncrease[rewardIndex] = FirestartingTimeReduction[levelIndex];
+                    firestarting.m_LevelWhereTinderNotRequired = NativeThreshold(ExpandedSkillProgression.HasRewardLevel(firestarting, 3));
+                    Fill(firestarting.m_BaseSuccessChance, FirestartingSuccessChance[levelIndex]);
+                    Fill(firestarting.m_DurationPercentIncrease, FirestartingDurationIncrease[levelIndex]);
+                    Fill(firestarting.m_StartPercentIncrease, FirestartingTimeReduction[levelIndex]);
                     break;
                 case Skill_CarcassHarvesting carcass:
-                    carcass.m_FrozenThresholdPercent[rewardIndex] = CarcassFrozenThreshold[levelIndex];
-                    carcass.m_MeatTimePercentDecrease[rewardIndex] = CarcassMeatTimeReduction[levelIndex];
-                    carcass.m_HideGutTimePercentDecrease[rewardIndex] = CarcassHideGutTimeReduction[levelIndex];
+                    carcass.m_LevelWhereNoInitialBarehandedHarvestLoss = NativeThreshold(ExpandedSkillProgression.HasRewardLevel(carcass, 3));
+                    Fill(carcass.m_FrozenThresholdPercent, CarcassFrozenThreshold[levelIndex]);
+                    Fill(carcass.m_MeatTimePercentDecrease, CarcassMeatTimeReduction[levelIndex]);
+                    Fill(carcass.m_HideGutTimePercentDecrease, CarcassHideGutTimeReduction[levelIndex]);
                     break;
                 case Skill_IceFishing iceFishing:
-                    iceFishing.m_LineBreakOnCatchChance[rewardIndex] = Mathf.RoundToInt(IceFishingLineBreakChance[levelIndex]);
-                    iceFishing.m_ReduceFishingTimePercent[rewardIndex] = IceFishingTimeReduction[levelIndex];
-                    iceFishing.m_IncreaseFishWeightPercent[rewardIndex] = IceFishingWeightIncrease[levelIndex];
+                    Fill(iceFishing.m_LineBreakOnCatchChance, Mathf.RoundToInt(IceFishingLineBreakChance[levelIndex]));
+                    Fill(iceFishing.m_ReduceFishingTimePercent, IceFishingTimeReduction[levelIndex]);
+                    Fill(iceFishing.m_IncreaseFishWeightPercent, IceFishingWeightIncrease[levelIndex]);
                     break;
                 case Skill_ClothingRepair mending:
-                    mending.m_BaseSuccessChance[rewardIndex] = MendingSuccessChance[levelIndex];
-                    mending.m_RepairTimePercentDecrease[rewardIndex] = MendingTimeReduction[levelIndex];
-                    mending.m_ItemConditionPercentIncrease[rewardIndex] = MendingConditionIncrease[levelIndex];
-                    mending.m_SewingToolDegradeDecrease[rewardIndex] = MendingToolWearReduction[levelIndex];
+                    Fill(mending.m_BaseSuccessChance, MendingSuccessChance[levelIndex]);
+                    Fill(mending.m_RepairTimePercentDecrease, MendingTimeReduction[levelIndex]);
+                    Fill(mending.m_ItemConditionPercentIncrease, MendingConditionIncrease[levelIndex]);
+                    Fill(mending.m_SewingToolDegradeDecrease, MendingToolWearReduction[levelIndex]);
                     break;
                 case Skill_Archery archery:
-                    archery.m_LevelWhereCanFireFromCrouch = 5;
-                    archery.m_SwayReduction[rewardIndex] = ArcherySwayReduction[levelIndex];
-                    archery.m_DamageIncrease[rewardIndex] = ArcheryDamageIncrease[levelIndex];
-                    archery.m_CriticalHitChanceIncrease[rewardIndex] = ArcheryCriticalChanceIncrease[levelIndex];
-                    archery.m_BleedOutTimeReduction[rewardIndex] = ArcheryBleedTimeReduction[levelIndex];
-                    archery.m_ConditionDegradeOnUseReduction[rewardIndex] = ArcheryConditionWearReduction[levelIndex];
+                    archery.m_LevelWhereCanFireFromCrouch = NativeThreshold(ExpandedSkillProgression.HasRewardLevel(archery, 5));
+                    Fill(archery.m_SwayReduction, ArcherySwayReduction[levelIndex]);
+                    Fill(archery.m_DamageIncrease, ArcheryDamageIncrease[levelIndex]);
+                    Fill(archery.m_CriticalHitChanceIncrease, ArcheryCriticalChanceIncrease[levelIndex]);
+                    Fill(archery.m_BleedOutTimeReduction, ArcheryBleedTimeReduction[levelIndex]);
+                    Fill(archery.m_ConditionDegradeOnUseReduction, ArcheryConditionWearReduction[levelIndex]);
                     break;
                 case Skill_Rifle rifle:
-                    rifle.m_CriticalHitChanceIncrease[rewardIndex] = RifleCriticalChanceIncrease[levelIndex];
-                    rifle.m_ConditionRepairBonus[rewardIndex] = RifleRepairBonus[levelIndex];
-                    rifle.m_AccuracyRangeIncrease[rewardIndex] = RifleAccuracyRangeIncrease[levelIndex];
-                    rifle.m_DamageIncrease[rewardIndex] = RifleDamageIncrease[levelIndex];
-                    rifle.m_StabilityBonus[rewardIndex] = RifleStabilityBonus[levelIndex];
-                    rifle.m_EffectiveRange[rewardIndex] = Mathf.RoundToInt(RifleEffectiveRange[levelIndex]);
-                    rifle.m_ConditionDegradeOnUseReduction[rewardIndex] = RifleConditionWearReduction[levelIndex];
-                    rifle.m_AimAssistAngleDegrees[rewardIndex] = RifleAimAssistAngle[levelIndex];
+                    Fill(rifle.m_CriticalHitChanceIncrease, RifleCriticalChanceIncrease[levelIndex]);
+                    Fill(rifle.m_ConditionRepairBonus, RifleRepairBonus[levelIndex]);
+                    Fill(rifle.m_AccuracyRangeIncrease, RifleAccuracyRangeIncrease[levelIndex]);
+                    Fill(rifle.m_DamageIncrease, RifleDamageIncrease[levelIndex]);
+                    Fill(rifle.m_StabilityBonus, RifleStabilityBonus[levelIndex]);
+                    Fill(rifle.m_EffectiveRange, Mathf.RoundToInt(RifleEffectiveRange[levelIndex]));
+                    Fill(rifle.m_ConditionDegradeOnUseReduction, RifleConditionWearReduction[levelIndex]);
+                    Fill(rifle.m_AimAssistAngleDegrees, RifleAimAssistAngle[levelIndex]);
                     break;
                 case Skill_Revolver revolver:
-                    revolver.m_CriticalHitChanceIncrease[rewardIndex] = RevolverCriticalChanceIncrease[levelIndex];
-                    revolver.m_ConditionRepairBonus[rewardIndex] = RevolverRepairBonus[levelIndex];
-                    revolver.m_RecoilCompensation[rewardIndex] = RevolverRecoilCompensation[levelIndex];
-                    revolver.m_DamageIncrease[rewardIndex] = RevolverDamageIncrease[levelIndex];
-                    revolver.m_ConditionDegradeOnUseReduction[rewardIndex] = RevolverConditionWearReduction[levelIndex];
-                    revolver.m_AimAssistAngleDegrees[rewardIndex] = RevolverAimAssistAngle[levelIndex];
-                    revolver.m_StruggleBonus[rewardIndex] = RevolverStruggleBonus[levelIndex];
+                    Fill(revolver.m_CriticalHitChanceIncrease, RevolverCriticalChanceIncrease[levelIndex]);
+                    Fill(revolver.m_ConditionRepairBonus, RevolverRepairBonus[levelIndex]);
+                    Fill(revolver.m_RecoilCompensation, RevolverRecoilCompensation[levelIndex]);
+                    Fill(revolver.m_DamageIncrease, RevolverDamageIncrease[levelIndex]);
+                    Fill(revolver.m_ConditionDegradeOnUseReduction, RevolverConditionWearReduction[levelIndex]);
+                    Fill(revolver.m_AimAssistAngleDegrees, RevolverAimAssistAngle[levelIndex]);
+                    Fill(revolver.m_StruggleBonus, RevolverStruggleBonus[levelIndex]);
                     break;
             }
+        }
+
+        private static void EnsureCookingConditionBaseline(Skill_Cooking cooking)
+        {
+            if (s_CookingLowConditionChance != null && s_CookingConditionMax != null) return;
+
+            s_CookingLowConditionChance = ReadFive(cooking.m_LowConditionChance);
+            s_CookingConditionMax = ReadFive(cooking.m_ConditionMax);
+        }
+
+        private static int[] ReadFive(Il2CppStructArray<int> values)
+        {
+            int[] result = new int[5];
+            if (values == null || values.Length == 0) return result;
+
+            int count = Math.Min(5, values.Length);
+            for (int i = 0; i < count; i++) result[i] = values[i];
+            for (int i = count; i < result.Length; i++) result[i] = result[Math.Max(0, count - 1)];
+            return result;
+        }
+
+        private static int NativeThreshold(bool active) => active ? 1 : 6;
+
+        private static void Fill(Il2CppStructArray<int> values, int value)
+        {
+            if (values == null) return;
+            for (int i = 0; i < values.Length; i++) values[i] = value;
+        }
+
+        private static void Fill(Il2CppStructArray<float> values, float value)
+        {
+            if (values == null) return;
+            for (int i = 0; i < values.Length; i++) values[i] = value;
         }
 
         internal static int Get(int[] values, Skill skill) => values[GetLevelIndex(skill)];

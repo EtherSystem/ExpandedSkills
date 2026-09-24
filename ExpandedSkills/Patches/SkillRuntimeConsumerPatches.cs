@@ -80,10 +80,6 @@ namespace ExpandedSkills.Patches
 
             float skillScale = Mathf.Clamp01(1f - ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingTimeReduction, skill) / 100f);
             __result = __instance.m_CookingTimeMultiplier * skillScale;
-            SkillActionDiagnostics.LogSample(
-                SkillType.Cooking,
-                "CookingPotItem.GetTotalCookMultiplier",
-                $"Surface multiplier=x{SkillActionDiagnostics.Number(__instance.m_CookingTimeMultiplier)} | Configured ES skill scale=x{SkillActionDiagnostics.Number(skillScale)} | Final total cook multiplier=x{SkillActionDiagnostics.Number(__result)}");
         }
     }
 
@@ -99,10 +95,6 @@ namespace ExpandedSkills.Patches
 
             float skillScale = Mathf.Clamp01(1f - ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingTimeReduction, skill) / 100f);
             __result = __instance.m_BoilingTimeMultiplier * skillScale;
-            SkillActionDiagnostics.LogSample(
-                SkillType.Cooking,
-                "CookingPotItem.GetTotalBoilMultiplier",
-                $"Surface multiplier=x{SkillActionDiagnostics.Number(__instance.m_BoilingTimeMultiplier)} | Configured ES skill scale=x{SkillActionDiagnostics.Number(skillScale)} | Final total boil multiplier=x{SkillActionDiagnostics.Number(__result)}");
         }
     }
 
@@ -118,10 +110,6 @@ namespace ExpandedSkills.Patches
 
             float skillScale = 1f + ExpandedSkillRewardData.Get(ExpandedSkillRewardData.CookingReadyTimeIncrease, skill) / 100f;
             __result = __instance.m_ReadyTimeMultiplier * skillScale;
-            SkillActionDiagnostics.LogSample(
-                SkillType.Cooking,
-                "CookingPotItem.GetTotalReadyMultiplier",
-                $"Surface multiplier=x{SkillActionDiagnostics.Number(__instance.m_ReadyTimeMultiplier)} | Configured ES skill scale=x{SkillActionDiagnostics.Number(skillScale)} | Final total ready multiplier=x{SkillActionDiagnostics.Number(__result)}");
         }
     }
 

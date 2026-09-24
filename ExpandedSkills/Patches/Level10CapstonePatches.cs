@@ -23,7 +23,6 @@ namespace ExpandedSkills.Patches
                     _pendingHealthDelta = 0f;
                 }
 
-                SkillActionDiagnostics.LogAction(SkillType.Cooking, "Condition.AddHealth(Starving)", $"Actual health delta passed to Condition={SkillActionDiagnostics.Number(healthDelta)}");
                 return true;
             }
 
@@ -36,13 +35,11 @@ namespace ExpandedSkills.Patches
             _pendingHealthDelta += healthDelta * 0.5f;
             if (Mathf.Abs(_pendingHealthDelta) < MinimumAppliedDelta)
             {
-                SkillActionDiagnostics.LogAction(SkillType.Cooking, "Condition.AddHealth(Starving)", "Health tick accumulated; no Condition delta applied on this call.");
                 return false;
             }
 
             healthDelta = _pendingHealthDelta;
             _pendingHealthDelta = 0f;
-            SkillActionDiagnostics.LogAction(SkillType.Cooking, "Condition.AddHealth(Starving)", $"Actual reduced health delta passed to Condition={SkillActionDiagnostics.Number(healthDelta)}");
             return true;
         }
     }
@@ -91,7 +88,6 @@ namespace ExpandedSkills.Patches
             torch.SetNormalizedHP(improvedCondition, false);
             torch.m_TorchItem.m_ElapsedBurnMinutes = Mathf.Clamp01(1f - improvedCondition)
                 * torch.m_TorchItem.GetModifiedBurnLifetimeMinutes();
-            SkillActionDiagnostics.LogAction(SkillType.Firestarting, "Panel_FeedFire.OnTakeTorch", $"Actual created torch condition={SkillActionDiagnostics.Percent(originalCondition * 100f)} -> {SkillActionDiagnostics.Percent(improvedCondition * 100f)}");
             return exception;
         }
     }
@@ -154,7 +150,6 @@ namespace ExpandedSkills.Patches
 
             float improvedKilograms = kilograms * 1.1f;
             __instance.m_MeatAvailableKG = ItemWeight.FromKilograms(improvedKilograms);
-            SkillActionDiagnostics.LogAction(SkillType.CarcassHarvesting, "BodyHarvest.InitializeResourcesAndConditions", $"Actual initial meat availability={SkillActionDiagnostics.Number(kilograms)} kg -> {SkillActionDiagnostics.Number(improvedKilograms)} kg");
         }
     }
 
@@ -448,7 +443,6 @@ namespace ExpandedSkills.Patches
             _bowActionActive = true;
             _bowActionStartFrame = Time.frameCount;
             ApplyBowSpeed(animation);
-            SkillActionDiagnostics.LogAction(SkillType.Archery, "PlayerAnimation bow action", $"Actual bow playback multiplier applied={SkillActionDiagnostics.Number(BowFasterPlayback)}");
         }
 
         internal static void BeginGunReload(PlayerAnimation animation, GunItem gun)
@@ -473,7 +467,6 @@ namespace ExpandedSkills.Patches
             _gunReloadActive = true;
             _gunReloadStartFrame = Time.frameCount;
             ApplyGunReloadSpeed(animation);
-            SkillActionDiagnostics.LogAction(SkillType.Rifle, "PlayerAnimation gun reload", $"Actual reload multiplier={SkillActionDiagnostics.Number(_originalReloadMultiplier)} -> {SkillActionDiagnostics.Number(gun.m_MultiplierReload)}");
         }
 
         internal static void Update()
@@ -746,5 +739,4 @@ namespace ExpandedSkills.Patches
             __instance.Refresh();
         }
     }
-
 }
