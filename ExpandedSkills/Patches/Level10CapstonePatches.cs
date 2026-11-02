@@ -611,6 +611,8 @@ namespace ExpandedSkills.Patches
     {
         typeof(int),
         typeof(int),
+        typeof(int),
+        typeof(float),
         typeof(bool),
         typeof(PlayerAnimation.OnAnimationEvent),
         typeof(PlayerAnimation.OnAnimationEvent),
